@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import argparse
-import time
 from pathlib import Path
 import os
 
@@ -10,19 +8,15 @@ import torch
 import torch.backends.cudnn as cudnn
 
 from models.experimental import attempt_load
-from utils.datasets import LoadStreams, LoadImage, LoadImages
-from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
-    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path, save_one_box
+from utils.datasets import LoadImage
+from utils.general import check_img_size, non_max_suppression, scale_coords
 from utils.plots import colors, plot_one_box
-from utils.torch_utils import select_device, load_classifier, time_synchronized
+from utils.torch_utils import select_device
 
 ## ROS IMPORTS ##
 import rospy
-import std_msgs.msg
 from rospkg import RosPack
-from std_msgs.msg import UInt8
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Polygon, Point32
 from yolov5_pytorch_ros.msg import BoundingBox, BoundingBoxes
 from cv_bridge import CvBridge, CvBridgeError
 
