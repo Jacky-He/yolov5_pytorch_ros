@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 import argparse
 import time
 from pathlib import Path
+import os
 
 import cv2
 import torch
@@ -20,18 +23,21 @@ from rospkg import RosPack
 from std_msgs.msg import UInt8
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Polygon, Point32
-from yolov5.detect import detect
 from yolov5_pytorch_ros.msg import BoundingBox, BoundingBoxes
 from cv_bridge import CvBridge, CvBridgeError
 
+package = RosPack()
+package_path = package.get_path('yolov5_pytorch_ros')
+
 class DetectorManager():
-    @torch.no_grad
+
     def __init__(self):
         self.image_topic = rospy.get_param("~image_topic")
         self.weights = rospy.get_param("~weights")
+        self.weights = os.path.join(package_path, "scripts", "weights", self.weights)
         self.imgsz = int(rospy.get_param("~imgsz"))
         self.conf_thres = float(rospy.get_param("~conf-thres"))
-        self.iou_thres = float(rospy.get_param("~iou_thres"))
+        self.iou_thres = float(rospy.get_param("~iou-thres"))
         self.max_det = int(rospy.get_param("~max-det"))
         self.device = rospy.get_param("~device")
         self.publish_image = rospy.get_param("~publish_image")
@@ -63,7 +69,6 @@ class DetectorManager():
         rospy.spin()
         return
 
-    @torch.no_grad
     def image_detect(self, data):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -79,11 +84,13 @@ class DetectorManager():
         dataset = LoadImage(self.cv_image, img_size=self.imgsz, stride=self.stride)
 
         # Run Inference
+        torch.no_grad()
         if self.device.type != 'cpu':
             self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(next(self.model.parameters())))  # run once
 
         for img, im0s in dataset:
             img = torch.from_numpy(img).to(self.device)
+            img = img.float()
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
             if img.ndimension() == 3:
                 img = img.unsqueeze(0)
@@ -107,11 +114,11 @@ class DetectorManager():
 
                         # Populate message 
                         detection_msg = BoundingBox()
-                        detection_msg.xmin = xyxy[0].item()
-                        detection_msg.ymin = xyxy[1].item()
-                        detection_msg.xmax = xyxy[2].item()
-                        detection_msg.ymax = xyxy[3].item()
-                        detection_msg.probability = conf 
+                        detection_msg.xmin = int(xyxy[0].item())
+                        detection_msg.ymin = int(xyxy[1].item())
+                        detection_msg.xmax = int(xyxy[2].item())
+                        detection_msg.ymax = int(xyxy[3].item())
+                        detection_msg.probability = conf.item() 
                         detection_msg.Class = self.names[c]
                         detection_results.bounding_boxes.append(detection_msg)
                 self.pub_.publish(detection_results)

@@ -126,14 +126,18 @@ class _RepeatSampler(object):
             yield from iter(self.sampler)
 
 class LoadImage:
-    def __int__(self, img, img_size=640, stride=32):
+    def __init__(self, img, img_size=640, stride=32):
         self.img_size = img_size
         self.stride = stride 
         self.img = img
+
     def __iter__(self):
         self.count = 0
+        return self
+
     def __len__(self):
         return 1
+
     def __next__(self):
         if (self.count == 1):
             raise StopIteration
