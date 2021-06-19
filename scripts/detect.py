@@ -3,7 +3,7 @@
 from pathlib import Path
 import os
 
-import cv2
+import cv2, time
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -64,6 +64,7 @@ class DetectorManager():
         return
 
     def image_detect(self, data):
+        t0 = time.time()
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
@@ -118,6 +119,7 @@ class DetectorManager():
                 self.pub_.publish(detection_results)
                 image_msg = self.bridge.cv2_to_imgmsg(im0, "bgr8")
                 self.pub_viz_.publish(image_msg)
+        rospy.loginfo(time.time() - t0)
                 
 if __name__ == '__main__':
     rospy.init_node("detector_manager_node")
